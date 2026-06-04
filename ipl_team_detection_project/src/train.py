@@ -24,7 +24,13 @@ from sklearn.ensemble import (
 )
 
 from sklearn.linear_model import LogisticRegression
-
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    f1_score,
+    confusion_matrix,
+    ConfusionMatrixDisplay
+)
 
 class TeamClassifierTrainer:
 
@@ -115,7 +121,30 @@ class TeamClassifierTrainer:
             predictions = model.predict(X_test)
 
             print(f"\n========== PREDICTION COMPLETED: {name} ==========\n")
+            # Generate confusion matrix
+            cm = confusion_matrix(y_test, predictions)
 
+            disp = ConfusionMatrixDisplay(
+                confusion_matrix=cm
+            )
+
+            fig, ax = plt.subplots(figsize=(10, 10))
+
+            disp.plot(
+                ax=ax,
+                cmap="Blues",
+                colorbar=False
+            )
+
+            plt.title(f"{name} Confusion Matrix")
+
+            plt.savefig(
+                OUTPUT_DIR / f"{name}_confusion_matrix.png",
+                bbox_inches="tight"
+            )
+
+            plt.close()
+            #end confusion_matrix
             accuracy = accuracy_score(y_test, predictions)
 
             f1 = f1_score(
