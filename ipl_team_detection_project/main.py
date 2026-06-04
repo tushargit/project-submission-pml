@@ -8,6 +8,7 @@ from src.config import CSV_PATH
 from src.config import MODEL_PATH
 from src.utils import load_image
 from src.visualization import draw_predictions
+from src.feature_analysis import FeatureAnalyzer
 
 import cv2
 
@@ -72,6 +73,17 @@ def run_inference(image_path):
 
     print("Visualization saved")
 
+def analyze_features():
+
+    data = np.load("features.npz")
+
+    X = data["X"]
+    y = data["y"]
+
+    analyzer = FeatureAnalyzer(X, y)
+
+    analyzer.analyze()
+
 def main():
 
     parser = argparse.ArgumentParser()
@@ -84,8 +96,10 @@ def main():
             "build",
             "train",
             "evaluate",
-            "infer"
+            "infer",
+            "analyze"
         ]
+
     )
 
     parser.add_argument(
@@ -112,6 +126,8 @@ def main():
 
         run_inference(args.image_path)
 
-
+    elif args.mode == "analyze":
+        analyze_features()
+    
 if __name__ == "__main__":
     main()

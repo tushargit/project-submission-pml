@@ -54,7 +54,10 @@ class TeamClassifierTrainer:
                 colsample_bytree=0.8,
                 objective='multi:softprob',
                 random_state=42,
-                tree_method='hist'
+                tree_method='hist',
+                eval_metric='mlogloss',
+                verbosity=0,
+                n_jobs=-1
             ),
 
             'LogisticRegression': LogisticRegression(
