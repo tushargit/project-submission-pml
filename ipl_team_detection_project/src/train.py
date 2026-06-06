@@ -31,6 +31,7 @@ from sklearn.metrics import (
     confusion_matrix,
     ConfusionMatrixDisplay
 )
+from xgboost import plot_importance
 
 class TeamClassifierTrainer:
 
@@ -72,7 +73,25 @@ class TeamClassifierTrainer:
                 n_jobs=-1
             )
         }
+    def plot_class_distribution_after_sampling(self, y):
 
+        counter = Counter(y)
+
+        plt.figure(figsize=(12, 6))
+
+        sns.barplot(
+            x=list(counter.keys()),
+            y=list(counter.values())
+        )
+
+        plt.title("Class Distribution After Sampling")
+
+        plt.savefig(
+            OUTPUT_DIR /
+            "class_distribution_after_sampling.png"
+        )
+
+        plt.close()
     def plot_class_distribution(self, y):
 
         counter = Counter(y)
@@ -96,20 +115,62 @@ class TeamClassifierTrainer:
 
         print("X Shape:", X.shape)
         print("y Shape:", y.shape)
-
-        self.plot_class_distribution(y)
-
         X_train, X_test, y_train, y_test = train_test_split(
-            X,
-            y,
-            test_size=0.2,
-            stratify=y,
-            random_state=42
+                    X,
+                    y,
+                    test_size=0.2,
+                    stratify=y,
+                    random_state=42
         )
+        self.plot_class_distribution(y)
+        print("\nOriginal Distribution")
+
+        print(Counter(y))
+        team_mask = y_train != 0
+
+        team_X = X_train[team_mask]
+        team_y = y_train[team_mask]
+
+        no_team_X = X_train[y_train == 0]
+        no_team_y = y_train[y_train == 0]
+
+        # Keep same number of No Team samples as Team samples
+
+        team_counts = Counter(team_y)
+
+        largest_team = max(team_counts.values())
+
+        print("Largest Team Class:", largest_team)
+
+        keep_idx = np.random.choice(
+            len(no_team_X),
+            size=largest_team,
+            replace=False
+        )
+
+        X_train = np.vstack([
+            team_X,
+            no_team_X[keep_idx]
+        ])
+
+        y_train = np.concatenate([
+            team_y,
+            no_team_y[keep_idx]
+        ])
+
+        print("\nAFTER SAMPLING")
+
+        print("X_train Shape:", X_train.shape)
+        print("y_train Shape:", y_train.shape)
+        print("\nTrain Distribution After Sampling")
+
+        print(Counter(y_train))
+        self.plot_class_distribution_after_sampling(y_train)
+        
 
         best_model = None
         best_score = 0
-
+        results = []
         for name, model in self.models.items():
 
             print(f"\n========== TRAINING STARTED: {name} ==========\n")
@@ -125,7 +186,8 @@ class TeamClassifierTrainer:
             cm = confusion_matrix(y_test, predictions)
 
             disp = ConfusionMatrixDisplay(
-                confusion_matrix=cm
+                confusion_matrix=cm,
+                display_labels=list(CLASS_NAMES.values())
             )
 
             fig, ax = plt.subplots(figsize=(10, 10))
@@ -172,6 +234,22 @@ class TeamClassifierTrainer:
                 f.write(report)
 
             if f1 > best_score:
+                if name == "XGBoost":
+                    plt.figure(figsize=(12,8))
+
+                    plot_importance(
+                        model,
+                        max_num_features=20
+                    )
+
+                    plt.tight_layout()
+
+                    plt.savefig(
+                        OUTPUT_DIR /
+                        "xgboost_feature_importance.png"
+                    )
+
+                    plt.close()
 
                 best_score = f1
                 best_model = model
@@ -181,5 +259,27 @@ class TeamClassifierTrainer:
                     pickle.dump(best_model, f)
 
                 print(f"\nBEST MODEL SAVED: {name}\n")
+            results.append({
+                "model": name,
+                "accuracy": accuracy,
+                "f1": f1
+            })
+        models = [r["model"] for r in results]
+        f1_scores = [r["f1"] for r in results]
 
+        plt.figure(figsize=(8,5))
+
+        plt.bar(
+            models,
+            f1_scores
+        )
+
+        plt.title("Model Comparison (Weighted F1)")
+        plt.ylabel("F1 Score")
+
+        plt.savefig(
+            OUTPUT_DIR / "model_comparison_f1.png"
+        )
+
+        plt.close()
         return best_model

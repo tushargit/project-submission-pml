@@ -6,8 +6,8 @@ from src.inference import IPLInference
 
 from src.config import CSV_PATH
 from src.config import MODEL_PATH
-from src.utils import load_image
-from src.visualization import draw_predictions
+from src.utils import load_image, resize_image
+from src.visualization import draw_predictions,draw_cell_numbers
 from src.feature_analysis import FeatureAnalyzer
 
 import cv2
@@ -61,7 +61,18 @@ def run_inference(image_path):
 
     print("Predictions:")
     print(predictions)
+    predictions = inference.predict_image(image_path)
 
+    print("Predictions:")
+    print(predictions)
+
+    inference.save_predictions(
+        image_path=image_path,
+        predictions=predictions,
+        save_path="outputs/predictions.csv"
+    )
+
+    print("CSV saved to outputs/predictions.csv")
     image = load_image(image_path)
 
     visualized = draw_predictions(image, predictions)
@@ -72,7 +83,15 @@ def run_inference(image_path):
     )
 
     print("Visualization saved")
+    img = load_image(image_path)
+    img = resize_image(img)
 
+    numbered = draw_cell_numbers(img)
+
+    cv2.imwrite(
+        "cell_numbers.png",
+        numbered
+    )
 def analyze_features():
 
     data = np.load("features.npz")

@@ -35,6 +35,42 @@ TEAM_COLORS = {
     10:(255,165,0)      # SRH
 }
 
+def draw_cell_numbers(image):
+
+    img = image.copy()
+
+    idx = 1
+
+    for row in range(8):
+        for col in range(8):
+
+            x1 = col * CELL_WIDTH
+            y1 = row * CELL_HEIGHT
+
+            x2 = x1 + CELL_WIDTH
+            y2 = y1 + CELL_HEIGHT
+
+            cv2.rectangle(
+                img,
+                (x1, y1),
+                (x2, y2),
+                (0,255,0),
+                1
+            )
+
+            cv2.putText(
+                img,
+                str(idx),
+                (x1 + 5, y1 + 20),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (0,0,255),
+                2
+            )
+
+            idx += 1
+
+    return img
 def draw_predictions(image, predictions):
 
     img = image.copy()
